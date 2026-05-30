@@ -1,0 +1,33 @@
+# Local Environment Variables
+.env
+.env.*
+!.env.example
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python Cache & Compiled Files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Persistence & Databases
+.cache/
+.cache/*
+postgres_data/
+redis_data/
+*.db
+*.sqlite
+
+# OS Specific Files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Thumbs.db
