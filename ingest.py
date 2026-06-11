@@ -8,11 +8,20 @@ from pypdf import PdfReader
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
 
-# FORCE RAILWAY PUBLIC PRODUCTION ROUTING
-# We set this before importing internal database modules to override local configurations
+# Database connection setup
+# We check if DATABASE_URL is set in environment or load it from .env file
 if "DATABASE_URL" not in os.environ:
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:bDkTQgIIqVnGlDZygspuZnoTUrXOxxRw@acela.proxy.rlwy.net:20295/railway"
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+# If still not set, default to local database URL
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = "postgresql+asyncpg://localhost/finintel"
 else:
+    # Ensure scheme is formatted to +asyncpg for async SQLAlchemy
     raw_url = os.environ["DATABASE_URL"]
     if raw_url.startswith("postgresql://"):
         os.environ["DATABASE_URL"] = raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)

@@ -143,8 +143,21 @@ async def generate_node(state: GraphState) -> Dict[str, Any]:
         "5. BUDGET CONSTRAINT: You MUST keep your response extremely concise to fit within a strict token budget. "
         "Keep `key_metric_summary` under 30 words. Keep each item in `risk_factors` under 5 words. "
         "Limit the number of citations in `source_citations` to at most 2, and keep their `excerpt` under 15 words.\n\n"
-        f"You MUST output raw JSON that conforms EXACTLY to this JSON Schema:\n"
-        f"{FinancialReportAnalysis.model_json_schema()}"
+        "You MUST output raw JSON that conforms EXACTLY to the following structure:\n"
+        "{\n"
+        "  \"key_metric_summary\": \"A clear textual synthesis summarizing key financial metrics (under 30 words).\",\n"
+        "  \"financial_impact_score\": 5,  // An integer rating from 1 to 10\n"
+        "  \"risk_factors\": [\"Risk 1\", \"Risk 2\"],  // List of risk factors, each under 5 words\n"
+        "  \"impact_assessment\": \"Low\",  // Must be one of: 'Low', 'Medium', 'High', 'Critical'\n"
+        "  \"source_citations\": [\n"
+        "    {\n"
+        "      \"document_name\": \"Exact name of the source document\",\n"
+        "      \"page_number\": 1,\n"
+        "      \"excerpt\": \"Direct verbatim word-for-word excerpt (under 15 words)\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "CRITICAL: Do NOT return the schema, `$defs`, or instructions. Return only the JSON object populated with your analysis."
     )
     
     prompt = (
