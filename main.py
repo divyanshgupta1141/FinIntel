@@ -24,6 +24,13 @@ from workflow import workflow_app, FinancialReportAnalysis
 async def lifespan(app: FastAPI):
     # Establish connection to Redis on startup
     await cache.connect()
+    if cache.redis_client:
+        logger.info("Clearing Redis Cache on startup to purge poisoned cache records...")
+        try:
+            await cache.redis_client.flushall()
+            logger.info("Redis cache flushed successfully.")
+        except Exception as e:
+            logger.error(f"Failed to flush Redis cache: {e}")
     yield
     # Clean up Redis connection on shutdown
     await cache.close()
