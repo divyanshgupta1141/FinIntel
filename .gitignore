@@ -31,3 +31,7 @@ redis_data/
 .DS_Store?
 ehthumbs.db
 Thumbs.db
+
+# Diagnostic and temporary files
+debug_search.py
+scratch/

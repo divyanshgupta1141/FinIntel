@@ -24,7 +24,14 @@ GEMINI_RPM_LIMIT = int(os.getenv("GEMINI_RPM_LIMIT", "15"))
 EVAL_MODE = os.getenv("EVAL_MODE", "fast")  # "fast" = faithfulness only, "full" = faithfulness & context precision
 
 # DB & Redis connection strings
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost/finintel")
+raw_db_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost/finintel")
+if raw_db_url.startswith("postgresql://"):
+    DATABASE_URL = raw_db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif raw_db_url.startswith("postgres://"):
+    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+else:
+    DATABASE_URL = raw_db_url
+
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Embedding cache settings

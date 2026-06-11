@@ -98,27 +98,35 @@ async def hybrid_search(
         # Fallback: if FTS or HNSW fails (e.g. extension or indexes not configured properly),
         # perform a simple semantic vector-only query.
         logger.info("Attempting vector-only fallback search...")
-        fallback_sql = text("""
-            SELECT id, document_name, page_number, chunk_text,
-                   (1.0 / (1.0 + (embedding <=> CAST(:embedding_val AS vector)))) as rrf_score
-            FROM document_chunks
-            ORDER BY embedding <=> CAST(:embedding_val AS vector)
-            LIMIT :top_k;
-        """)
-        result = await session.execute(
-            fallback_sql,
-            {
-                "embedding_val": embedding_str,
-                "top_k": top_k
-            }
-        )
-        chunks = []
-        for row in result.fetchall():
-            chunks.append({
-                "id": str(row.id),
-                "document_name": row.document_name,
-                "page_number": row.page_number,
-                "chunk_text": row.chunk_text,
-                "rrf_score": float(row.rrf_score)
-            })
-        return chunks
+        try:
+            fallback_sql = text("""
+                SELECT id, document_name, page_number, chunk_text,
+                       (1.0 / (1.0 + (embedding <=> CAST(:embedding_val AS vector)))) as rrf_score
+                FROM document_chunks
+                ORDER BY embedding <=> CAST(:embedding_val AS vector)
+                LIMIT :top_k;
+            """)
+            result = await session.execute(
+                fallback_sql,
+                {
+                    "embedding_val": embedding_str,
+                    "top_k": top_k
+                }
+            )
+            chunks = []
+            import math
+            for row in result.fetchall():
+                score = row.rrf_score
+                if score is None or math.isnan(score):
+                    score = 0.0
+                chunks.append({
+                    "id": str(row.id),
+                    "document_name": row.document_name,
+                    "page_number": row.page_number,
+                    "chunk_text": row.chunk_text,
+                    "rrf_score": float(score)
+                })
+            return chunks
+        except Exception as fallback_e:
+            logger.error(f"Fallback search also failed: {fallback_e}")
+            return []

@@ -8,6 +8,17 @@ from pypdf import PdfReader
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
 
+# FORCE RAILWAY PUBLIC PRODUCTION ROUTING
+# We set this before importing internal database modules to override local configurations
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:bDkTQgIIqVnGlDZygspuZnoTUrXOxxRw@acela.proxy.rlwy.net:20295/railway"
+else:
+    raw_url = os.environ["DATABASE_URL"]
+    if raw_url.startswith("postgresql://"):
+        os.environ["DATABASE_URL"] = raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif raw_url.startswith("postgres://"):
+        os.environ["DATABASE_URL"] = raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
 from database import init_db, get_session, DocumentChunk
 
 # Configure logging
@@ -102,7 +113,6 @@ def chunk_text(text: str, page_number: int, chunk_size_words: int = 500, overlap
         i = 0
         while i < len(words):
             chunk_words = words[i : i + chunk_size_words]
-            # Avoid inserting tiny dangling chunks at the end
             if len(chunk_words) < 100 and chunks:
                 break
             chunks.append({
@@ -170,13 +180,8 @@ def generate_mock_financial_data() -> List[Dict[str, Any]]:
 
 async def ingest_document(pdf_path: str = None, doc_name: str = "Annual_Report_2025"):
     """
-    Performs the entire ingestion workflow:
-    1. Extracts chunks from PDF or generates mock chunks.
-    2. Initializes database schemas and extensions.
-    3. Calls Gemini API to get embeddings for each chunk.
-    4. Inserts everything into PostgreSQL.
+    Performs the entire ingestion workflow targeting live Railway instance.
     """
-    # 1. Gather chunks
     if pdf_path:
         if not os.path.exists(pdf_path):
             logger.error(f"File not found: {pdf_path}")
@@ -190,12 +195,11 @@ async def ingest_document(pdf_path: str = None, doc_name: str = "Annual_Report_2
         logger.warning("No chunks found to ingest.")
         return
         
-    logger.info(f"Total chunks extracted: {len(chunks_data)}")
+    logger.info(f"Total chunks targeted for remote production upload: {len(chunks_data)}")
     
-    # 2. Get client and init DB
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        logger.warning("GEMINI_API_KEY not found in environment. Generating mock embeddings (768-dim zero-vectors) for database seeding.")
+        logger.warning("GEMINI_API_KEY not found in environment. Generating mock embeddings (768-dim zero-vectors).")
         client = None
     else:
         try:
@@ -204,26 +208,24 @@ async def ingest_document(pdf_path: str = None, doc_name: str = "Annual_Report_2
             logger.warning(f"Failed to initialize Gemini client: {e}. Falling back to mock embeddings.")
             client = None
             
+    logger.info("Initializing connection parameters and verifying production schema layout...")
     await init_db()
     
-    # 3. Process embeddings and write to DB
     async for session in get_session():
-        logger.info("Generating embeddings and saving chunks...")
+        logger.info("Pinging Railway database cluster. Pushing vector records asynchronously...")
         processed_count = 0
         
         for item in chunks_data:
             text_content = item["text"].strip()
             page_num = item["page_number"]
             
-            logger.info(f"Processing chunk {processed_count+1}/{len(chunks_data)} (Page {page_num})...")
+            logger.info(f"Streaming chunk {processed_count+1}/{len(chunks_data)} into live DB...")
             
-            # Generate vector embedding
             if client is None:
                 embedding = [0.0] * 768
             else:
                 embedding = await get_embedding_async(client, text_content)
             
-            # Insert into database
             chunk_obj = DocumentChunk(
                 document_name=doc_name,
                 page_number=page_num,
@@ -233,14 +235,13 @@ async def ingest_document(pdf_path: str = None, doc_name: str = "Annual_Report_2
             session.add(chunk_obj)
             processed_count += 1
             
-            # Rate limit mitigation for Gemini API free tier: pause briefly between requests
             if client is not None:
                 await asyncio.sleep(1.0)
             else:
                 await asyncio.sleep(0.05)
             
         await session.commit()
-        logger.info(f"Ingestion complete. Successfully saved {processed_count} chunks to the database.")
+        logger.info(f"🎉 Production sync complete! Successfully injected {processed_count} vector objects into Railway.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest financial PDF documents into the FinIntel PostgreSQL vector store.")
