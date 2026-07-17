@@ -25,6 +25,24 @@ EVAL_MODE = os.getenv("EVAL_MODE", "fast")  # "fast" = faithfulness only, "full"
 
 # DB & Redis connection strings
 raw_db_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost/finintel")
+
+# Sanitize query parameters for asyncpg compatibility:
+# 1. Convert sslmode to ssl (e.g. sslmode=require -> ssl=require)
+# 2. Remove channel_binding which is not supported by asyncpg
+if "?" in raw_db_url:
+    base_url, query_str = raw_db_url.split("?", 1)
+    params = query_str.split("&")
+    new_params = []
+    for p in params:
+        if p.startswith("sslmode="):
+            val = p.split("=", 1)[1]
+            new_params.append(f"ssl={val}")
+        elif p.startswith("channel_binding="):
+            continue
+        else:
+            new_params.append(p)
+    raw_db_url = f"{base_url}?{'&'.join(new_params)}"
+
 if raw_db_url.startswith("postgresql://"):
     DATABASE_URL = raw_db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 elif raw_db_url.startswith("postgres://"):
