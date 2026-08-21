@@ -14,9 +14,9 @@ logging.basicConfig(
 logger = logging.getLogger("config")
 
 # Model settings
-INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "llama-3.1-8b-instant")
+INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "qwen/qwen3.6-27b")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
-EVALUATION_MODEL = os.getenv("EVALUATION_MODEL", "llama-3.1-8b-instant")
+EVALUATION_MODEL = os.getenv("EVALUATION_MODEL", "qwen/qwen3.6-27b")
 EMBEDDING_DIMENSION = 768
 
 # Throttling & Evaluation mode settings
