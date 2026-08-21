@@ -145,19 +145,19 @@ async def generate_node(state: GraphState) -> Dict[str, Any]:
         "Limit the number of citations in `source_citations` to at most 2, and keep their `excerpt` under 15 words.\n\n"
         "You MUST output raw JSON that conforms EXACTLY to the following structure:\n"
         "{\n"
-        "  \"key_metric_summary\": \"A clear textual synthesis summarizing key financial metrics (under 30 words).\",\n"
-        "  \"financial_impact_score\": 5,  // An integer rating from 1 to 10\n"
-        "  \"risk_factors\": [\"Risk 1\", \"Risk 2\"],  // List of risk factors, each under 5 words\n"
-        "  \"impact_assessment\": \"Low\",  // Must be one of: 'Low', 'Medium', 'High', 'Critical'\n"
-        "  \"source_citations\": [\n"
+        '  "key_metric_summary": "A clear textual synthesis summarizing key financial metrics.",\n'
+        '  "financial_impact_score": 5,\n'
+        '  "risk_factors": ["Risk 1", "Risk 2"],\n'
+        '  "impact_assessment": "Low",\n'
+        '  "source_citations": [\n'
         "    {\n"
-        "      \"document_name\": \"Exact name of the source document\",\n"
-        "      \"page_number\": 1,\n"
-        "      \"excerpt\": \"Direct verbatim word-for-word excerpt (under 15 words)\"\n"
+        '      "document_name": "Exact name of the source document",\n'
+        '      "page_number": 1,\n'
+        '      "excerpt": "Direct verbatim word-for-word excerpt"\n'
         "    }\n"
         "  ]\n"
         "}\n\n"
-        "CRITICAL: Do NOT return the schema, `$defs`, or instructions. Return only the JSON object populated with your analysis."
+        "CRITICAL: Do NOT return comments, markdown formatting, schema, or `$defs`. Return only the valid JSON object populated with your analysis."
     )
     
     prompt = (
