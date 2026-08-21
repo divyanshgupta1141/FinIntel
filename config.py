@@ -14,9 +14,19 @@ logging.basicConfig(
 logger = logging.getLogger("config")
 
 # Model settings
-INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "openai/gpt-oss-120b")
+raw_inf_model = os.getenv("INFERENCE_MODEL", "openai/gpt-oss-120b")
+if any(m in raw_inf_model for m in ["llama-3.1-8b-instant", "llama3-8b", "llama3-70b"]):
+    INFERENCE_MODEL = "openai/gpt-oss-120b"
+else:
+    INFERENCE_MODEL = raw_inf_model
+
+raw_eval_model = os.getenv("EVALUATION_MODEL", "openai/gpt-oss-120b")
+if any(m in raw_eval_model for m in ["llama-3.1-8b-instant", "llama3-8b", "llama3-70b"]):
+    EVALUATION_MODEL = "openai/gpt-oss-120b"
+else:
+    EVALUATION_MODEL = raw_eval_model
+
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
-EVALUATION_MODEL = os.getenv("EVALUATION_MODEL", "openai/gpt-oss-120b")
 EMBEDDING_DIMENSION = 768
 
 # Throttling & Evaluation mode settings

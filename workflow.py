@@ -173,21 +173,43 @@ async def generate_node(state: GraphState) -> Dict[str, Any]:
         
         # Call chat completions using native Groq SDK with retry protection
         def call_groq():
-            return client.chat.completions.create(
-                model=INFERENCE_MODEL,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"},
-                max_tokens=500
-            )
+            try:
+                return client.chat.completions.create(
+                    model=INFERENCE_MODEL,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    max_tokens=500
+                )
+            except Exception as err:
+                logger.warning(f"Groq json_object mode failed ({err}), retrying without response_format...")
+                return client.chat.completions.create(
+                    model=INFERENCE_MODEL,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=500
+                )
 
         response = await execute_with_retry(call_groq)
         
         raw_text = response.choices[0].message.content
         logger.info(f"Raw response text: {raw_text}")
-        analysis_result = FinancialReportAnalysis.model_validate_json(raw_text)
+        
+        # Clean potential markdown backticks (```json ... ```)
+        cleaned_text = raw_text.strip()
+        if cleaned_text.startswith("```"):
+            lines = cleaned_text.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            cleaned_text = "\n".join(lines).strip()
+            
+        analysis_result = FinancialReportAnalysis.model_validate_json(cleaned_text)
         return {"analysis": analysis_result, "error": None}
         
     except Exception as e:
