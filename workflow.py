@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from typing import List, Dict, Any, Optional, Literal, TypedDict
 from pydantic import BaseModel, Field
@@ -181,7 +182,7 @@ async def generate_node(state: GraphState) -> Dict[str, Any]:
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type": "json_object"},
-                    max_tokens=500
+                    max_tokens=2048
                 )
             except Exception as err:
                 logger.warning(f"Groq json_object mode failed ({err}), retrying without response_format...")
@@ -191,23 +192,28 @@ async def generate_node(state: GraphState) -> Dict[str, Any]:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
                     ],
-                    max_tokens=500
+                    max_tokens=2048
                 )
 
         response = await execute_with_retry(call_groq)
         
-        raw_text = response.choices[0].message.content
+        raw_text = response.choices[0].message.content or ""
         logger.info(f"Raw response text: {raw_text}")
         
-        # Clean potential markdown backticks (```json ... ```)
-        cleaned_text = raw_text.strip()
-        if cleaned_text.startswith("```"):
-            lines = cleaned_text.splitlines()
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            cleaned_text = "\n".join(lines).strip()
+        # Clean thinking blocks (<think>...</think>), markdown code blocks, and extract JSON object
+        text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            cleaned_text = match.group(0).strip()
+        else:
+            cleaned_text = text
+            if cleaned_text.startswith("```"):
+                lines = cleaned_text.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                cleaned_text = "\n".join(lines).strip()
             
         analysis_result = FinancialReportAnalysis.model_validate_json(cleaned_text)
         return {"analysis": analysis_result, "error": None}
