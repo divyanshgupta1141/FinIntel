@@ -1,6 +1,7 @@
 import os
 import json
 import hashlib
+import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 import redis.asyncio as aioredis
@@ -22,36 +23,77 @@ class SemanticCache:
     """
     Semantic Caching layer using Redis Stack Vector Search (RediSearch).
     Uses FT.CREATE to set up a vector index and FT.SEARCH with KNN to find similar queries.
+    Gracefully degrades and bypasses caching if Redis is unavailable or fails to connect.
     """
     def __init__(self):
         self.redis_client: Optional[aioredis.Redis] = None
+        self.is_available: bool = False
 
     async def connect(self):
         """
         Establishes connection to the Redis server and initializes the Vector Search index.
+        Fails gracefully without raising exceptions if Redis is down or unreachable.
         """
-        if not self.redis_client:
+        if self.is_available and self.redis_client:
+            return
+
+        if not REDIS_URL:
+            logger.warning("REDIS_URL environment variable is not configured. Bypassing semantic cache.")
+            self.redis_client = None
+            self.is_available = False
+            return
+
+        client = None
+        try:
             logger.info(f"Connecting to Redis Stack at {REDIS_URL}...")
-            self.redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
-            try:
-                await self.redis_client.ping()
-                logger.info("Connected to Redis successfully.")
-                
-                # Verify or create the RediSearch index
-                await self._init_index()
-            except Exception as e:
-                logger.error(f"Failed to connect to Redis Stack or setup index: {e}")
-                self.redis_client = None
+            client = aioredis.from_url(
+                REDIS_URL,
+                decode_responses=True,
+                socket_connect_timeout=3.0,
+                socket_timeout=3.0,
+            )
+            # Verify connectivity with a strict timeout
+            await asyncio.wait_for(client.ping(), timeout=3.0)
+            logger.info("Connected to Redis successfully.")
+            
+            self.redis_client = client
+            # Verify or create the RediSearch index
+            await self._init_index()
+            self.is_available = True
+            logger.info("Redis semantic cache initialized and ready.")
+        except Exception as e:
+            logger.warning(
+                f"Failed to connect to Redis Stack or setup index: {e}. "
+                "FastAPI will start up successfully with the semantic cache bypassed."
+            )
+            if client:
+                try:
+                    await client.aclose()
+                except Exception:
+                    pass
+            self.redis_client = None
+            self.is_available = False
 
     async def _init_index(self):
         """
         Initializes the RediSearch HNSW vector index if it doesn't exist.
         """
+        if not self.redis_client:
+            return
+
         try:
             # Check if index exists
             await self.redis_client.ft(INDEX_NAME).info()
             logger.info(f"RediSearch index '{INDEX_NAME}' already exists.")
-        except Exception:
+        except Exception as info_err:
+            err_msg = str(info_err).lower()
+            if "unknown command" in err_msg:
+                logger.warning(
+                    f"Connected Redis instance does not support RediSearch commands ({info_err}). "
+                    "Semantic caching requires Redis Stack / RediSearch. Bypassing cache."
+                )
+                raise info_err
+
             # Dynamically get embedding dimension
             dim = await get_embedding_dimension()
             logger.info(f"RediSearch index '{INDEX_NAME}' not found. Creating a new HNSW vector index with dimension {dim}...")
@@ -90,9 +132,14 @@ class SemanticCache:
         Closes the Redis connection pool.
         """
         if self.redis_client:
-            await self.redis_client.aclose()
-            self.redis_client = None
-            logger.info("Redis connection closed.")
+            try:
+                await self.redis_client.aclose()
+            except Exception as e:
+                logger.warning(f"Error closing Redis client: {e}")
+            finally:
+                self.redis_client = None
+                self.is_available = False
+                logger.info("Redis connection closed.")
 
     async def get(self, query_text: str, query_embedding: List[float], similarity_threshold: float = 0.96) -> Optional[Dict[str, Any]]:
         """
@@ -102,10 +149,7 @@ class SemanticCache:
         3. Cosine similarity score = 1.0 - Cosine Distance.
            If Cosine Distance is <= (1.0 - threshold), it is a match.
         """
-        if not self.redis_client:
-            await self.connect()
-        if not self.redis_client:
-            logger.warning("Redis is unavailable. Bypassing semantic cache.")
+        if not self.is_available or not self.redis_client:
             return None
 
         try:
@@ -151,7 +195,7 @@ class SemanticCache:
             return None
 
         except Exception as e:
-            logger.error(f"Error checking semantic cache in Redis: {e}")
+            logger.warning(f"Error checking semantic cache in Redis: {e}. Bypassing cache.")
             return None
 
     async def set(self, query_text: str, query_embedding: List[float], response_data: Dict[str, Any], ttl: int = 86400):
@@ -160,9 +204,7 @@ class SemanticCache:
         The vector is written as float32 binary format to support RediSearch vector indexing.
         TTL defaults to 24 hours.
         """
-        if not self.redis_client:
-            await self.connect()
-        if not self.redis_client:
+        if not self.is_available or not self.redis_client:
             return
 
         try:
@@ -186,7 +228,7 @@ class SemanticCache:
 
             logger.info(f"Stored query in Redis semantic cache with TTL {ttl}s. Key: {key}")
         except Exception as e:
-            logger.error(f"Error saving to Redis semantic cache: {e}")
+            logger.warning(f"Error saving to Redis semantic cache: {e}")
 
 # Global cache instance
 cache = SemanticCache()

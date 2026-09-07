@@ -22,18 +22,28 @@ from workflow import workflow_app, FinancialReportAnalysis
 # ---------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Establish connection to Redis on startup
-    await cache.connect()
-    if cache.redis_client:
+    # Establish connection to Redis on startup with graceful fallback
+    try:
+        await cache.connect()
+    except Exception as e:
+        logger.warning(f"Failed to initialize Redis on startup: {e}. Running without cache.")
+
+    if getattr(cache, "is_available", False) and cache.redis_client:
         logger.info("Clearing Redis Cache on startup to purge poisoned cache records...")
         try:
             await cache.redis_client.flushall()
             logger.info("Redis cache flushed successfully.")
         except Exception as e:
-            logger.error(f"Failed to flush Redis cache: {e}")
+            logger.warning(f"Failed to flush Redis cache: {e}. Continuing startup.")
+    else:
+        logger.warning("Redis is unavailable. FastAPI started successfully with cache bypassed.")
+
     yield
     # Clean up Redis connection on shutdown
-    await cache.close()
+    try:
+        await cache.close()
+    except Exception as e:
+        logger.warning(f"Error during Redis shutdown cleanup: {e}")
 
 app = FastAPI(
     title="FinIntel: Financial Document Intelligence Platform",
@@ -68,7 +78,7 @@ async def rate_limiting_middleware(request: Request, call_next):
         client_ip = request.client.host if request.client else "unknown"
         rate_limit_key = f"rate_limit:{client_ip}"
         
-        if cache.redis_client:
+        if getattr(cache, "is_available", False) and cache.redis_client:
             try:
                 now = time.time()
                 clear_before = now - LIMIT_WINDOW
