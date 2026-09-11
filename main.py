@@ -152,7 +152,7 @@ async def health_check():
     """
     Health check endpoint to verify API operation status.
     """
-    return {"status": "healthy", "service": "FinIntel"}
+    return JSONResponse(status_code=200, content={"status": "live", "service": "FinIntel"})
 
 @app.post("/api/v1/analyze", response_model=FinancialReportAnalysis)
 async def analyze_document(request: AnalysisRequest):
