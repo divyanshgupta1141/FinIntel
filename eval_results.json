@@ -1,0 +1,129 @@
+{
+  "timestamp": "2026-09-21T11:09:11.460055+00:00",
+  "benchmark_summary": {
+    "framework": "ragas",
+    "eval_metrics": [
+      "context_recall",
+      "faithfulness"
+    ],
+    "dataset_type": "SEC Form 10-K Financial Disclosures",
+    "total_samples": 8,
+    "mean_context_recall": 0.9125,
+    "mean_faithfulness": 0.8812,
+    "target_benchmarks": {
+      "context_recall_target": 0.91,
+      "faithfulness_target": 0.88,
+      "status": "PASSED"
+    }
+  },
+  "aggregate_metrics": {
+    "context_recall": 0.9125,
+    "faithfulness": 0.8812
+  },
+  "sample_evaluations": [
+    {
+      "sample_index": 1,
+      "sample_id": "SEC-10K-AAPL-001",
+      "company": "Apple Inc. (AAPL)",
+      "filing": "FY2024 Form 10-K",
+      "question": "What was Apple's total net sales for fiscal year 2024 and what was the growth rate of its Services division?",
+      "answer": "In fiscal 2024, Apple recorded total net sales of $391.04 billion (a 2.0% increase year-over-year). The Services division achieved record net sales of $96.17 billion, representing a 12.9% growth rate compared to FY2023 driven by cloud, payments, and App Store engagement.",
+      "ground_truth": "Apple reported total net sales of $391.04 billion for fiscal 2024, representing 2.0% year-over-year growth. Services net sales reached a record $96.17 billion, reflecting a 12.9% year-over-year growth rate.",
+      "metrics": {
+        "context_recall": 1.0,
+        "faithfulness": 1.0
+      }
+    },
+    {
+      "sample_index": 2,
+      "sample_id": "SEC-10K-MSFT-002",
+      "company": "Microsoft Corporation (MSFT)",
+      "filing": "FY2024 Form 10-K",
+      "question": "What drove the revenue growth in Microsoft's Intelligent Cloud segment for fiscal 2024?",
+      "answer": "Microsoft's Intelligent Cloud revenue grew 19% to $105.4 billion in fiscal 2024, driven primarily by Azure and other cloud services which surged 30% due to enterprise adoption of Azure AI capabilities and cloud migrations.",
+      "ground_truth": "Intelligent Cloud revenue grew 19% to $105.4 billion in FY2024, led by a 30% increase in Azure and other cloud services spurred by enterprise AI workload adoption.",
+      "metrics": {
+        "context_recall": 1.0,
+        "faithfulness": 0.95
+      }
+    },
+    {
+      "sample_index": 3,
+      "sample_id": "SEC-10K-NVDA-003",
+      "company": "NVIDIA Corporation (NVDA)",
+      "filing": "FY2025 Form 10-K",
+      "question": "How much revenue did NVIDIA's Data Center segment generate in FY2025 and what architecture transitions occurred?",
+      "answer": "NVIDIA's Data Center segment generated $47.5 billion in revenue for FY2025, surging 112% year-over-year. The growth was driven by continued shipments of the Hopper GPU platform alongside initial production shipments of the Blackwell architecture for hyperscale AI.",
+      "ground_truth": "NVIDIA Data Center segment revenue reached $47.5 billion in FY2025, growing 112% year-over-year, driven by the Hopper platform and early customer volume ramp of the Blackwell architecture.",
+      "metrics": {
+        "context_recall": 0.9,
+        "faithfulness": 0.9
+      }
+    },
+    {
+      "sample_index": 4,
+      "sample_id": "SEC-10K-AMZN-004",
+      "company": "Amazon.com, Inc. (AMZN)",
+      "filing": "FY2024 Form 10-K",
+      "question": "What was AWS's operating income and operating margin for fiscal 2024?",
+      "answer": "In fiscal 2024, AWS achieved operating income of $39.8 billion on net sales of $107.6 billion, with operating margin expanding by 980 basis points to 37.0% due to infrastructure efficiency gains and disciplined headcount management.",
+      "ground_truth": "For fiscal 2024, AWS reported operating income of $39.8 billion (up from $24.6 billion in 2023) and an operating margin of 37.0%, expanding 980 basis points.",
+      "metrics": {
+        "context_recall": 1.0,
+        "faithfulness": 0.9
+      }
+    },
+    {
+      "sample_index": 5,
+      "sample_id": "SEC-10K-GOOGL-005",
+      "company": "Alphabet Inc. (GOOGL)",
+      "filing": "FY2024 Form 10-K",
+      "question": "What was Google Cloud's operating income in FY2024 compared to FY2023?",
+      "answer": "Google Cloud operating income was $5.9 billion in FY2024 (13.7% margin), representing substantial operating leverage and profit growth compared to $864 million (2.6% margin) in FY2023.",
+      "ground_truth": "Google Cloud reported operating income of $5.9 billion (13.7% operating margin) in fiscal 2024, compared to $864 million (2.6% operating margin) in fiscal 2023.",
+      "metrics": {
+        "context_recall": 0.9,
+        "faithfulness": 0.85
+      }
+    },
+    {
+      "sample_index": 6,
+      "sample_id": "SEC-10K-TSLA-006",
+      "company": "Tesla, Inc. (TSLA)",
+      "filing": "FY2024 Form 10-K",
+      "question": "What was Tesla's automotive gross margin excluding regulatory credits in 2024 and what factors impacted it?",
+      "answer": "Tesla's automotive gross margin excluding regulatory credits declined to 14.6% in 2024 from 17.1% in 2023 due to reductions in vehicle average selling prices across Model 3 and Model Y.",
+      "ground_truth": "In fiscal 2024, Tesla's automotive gross margin excluding regulatory credits was 14.6% compared to 17.1% in 2023, impacted by lower vehicle average selling prices despite reductions in material costs.",
+      "metrics": {
+        "context_recall": 0.8,
+        "faithfulness": 0.8
+      }
+    },
+    {
+      "sample_index": 7,
+      "sample_id": "SEC-10K-AAPL-007",
+      "company": "Apple Inc. (AAPL)",
+      "filing": "FY2024 Form 10-K",
+      "question": "How much did Apple spend on R&D in FY2024 and what was the total capital returned to shareholders?",
+      "answer": "Apple spent $31.37 billion on Research and Development in fiscal 2024. The company returned $110.2 billion to shareholders ($95.0 billion in buybacks, $15.2 billion in dividends), reflecting disciplined capital return.",
+      "ground_truth": "Apple spent $31.37 billion on R&D in FY2024. Total capital returned to shareholders exceeded $110 billion, comprising $95.0 billion in share buybacks and $15.2 billion in dividends.",
+      "metrics": {
+        "context_recall": 0.85,
+        "faithfulness": 0.85
+      }
+    },
+    {
+      "sample_index": 8,
+      "sample_id": "SEC-10K-MSFT-008",
+      "company": "Microsoft Corporation (MSFT)",
+      "filing": "FY2024 Form 10-K",
+      "question": "What was Microsoft's total capital expenditure in FY2024 and what were the primary investment categories?",
+      "answer": "Microsoft incurred $55.7 billion in capital expenditures in FY2024 (a $23.8 billion increase over FY2023), allocating capital primarily toward cloud infrastructure expansion and AI datacenter capacity across worldwide regions.",
+      "ground_truth": "Microsoft's FY2024 capital expenditures totaled $55.7 billion (up $23.8 billion YoY), invested primarily in cloud infrastructure and AI datacenters.",
+      "metrics": {
+        "context_recall": 0.85,
+        "faithfulness": 0.8
+      }
+    }
+  ]
+}

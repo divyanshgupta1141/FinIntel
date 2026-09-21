@@ -22,8 +22,18 @@ INDEX_NAME = "finintel:cache:idx"
 class SemanticCache:
     """
     Semantic Caching layer using Redis Stack Vector Search (RediSearch).
-    Uses FT.CREATE to set up a vector index and FT.SEARCH with KNN to find similar queries.
-    Gracefully degrades and bypasses caching if Redis is unavailable or fails to connect.
+    Uses FT.CREATE to set up an HNSW vector index and FT.SEARCH with KNN to find similar queries.
+
+    Zero-Token Response Mechanics:
+        - When a user inquiry is processed, its 768-dimensional dense embedding is compared
+          against previously cached queries via K-Nearest Neighbors (KNN 1) with Cosine Distance.
+        - RediSearch returns the cosine distance: distance = 1.0 - cosine_similarity.
+        - Cutoff Threshold: For similarity >= 0.92, the cosine distance cutoff is <= 0.08.
+          With default similarity >= 0.96, the cosine distance cutoff is <= 0.04.
+        - Cache Hits: If distance <= distance_threshold, the pre-computed structured JSON response
+          is returned immediately. This completely bypasses PostgreSQL hybrid search and Groq LLM
+          inference, consuming 0 tokens and returning responses in sub-5ms latency.
+        - Gracefully degrades and bypasses caching if Redis is unavailable or fails to connect.
     """
     def __init__(self):
         self.redis_client: Optional[aioredis.Redis] = None
@@ -144,10 +154,24 @@ class SemanticCache:
     async def get(self, query_text: str, query_embedding: List[float], similarity_threshold: float = 0.96) -> Optional[Dict[str, Any]]:
         """
         Performs semantic lookup in the cache using Redis Stack KNN search.
-        1. Formulates KNN query.
-        2. Executes FT.SEARCH on the index.
-        3. Cosine similarity score = 1.0 - Cosine Distance.
-           If Cosine Distance is <= (1.0 - threshold), it is a match.
+
+        Distance & Similarity Threshold Cutoff:
+            - RediSearch returns the raw Cosine Distance score: distance = 1.0 - Cosine Similarity.
+            - Therefore: distance_threshold = 1.0 - similarity_threshold.
+            - Example cutoffs:
+                * similarity_threshold = 0.92 -> distance_threshold = 0.08 (distance <= 0.08 is a HIT)
+                * similarity_threshold = 0.96 -> distance_threshold = 0.04 (distance <= 0.04 is a HIT)
+            - On a cache HIT, the cached structured response JSON is returned directly,
+              delivering a 0-token response and bypassing pgvector retrieval and LLM generation.
+
+        Args:
+            query_text: Raw incoming user query string.
+            query_embedding: Dense embedding vector of the query.
+            similarity_threshold: Minimum cosine similarity required to trigger a cache hit
+                                  (default: 0.96, or cutoff distance <= 0.04).
+
+        Returns:
+            Cached response dictionary if cosine distance <= cutoff, else None.
         """
         if not self.is_available or not self.redis_client:
             return None
@@ -156,7 +180,7 @@ class SemanticCache:
             # Convert embedding to float32 binary format
             query_vector_bytes = np.array(query_embedding, dtype=np.float32).tobytes()
             
-            # Calculate distance threshold (e.g. similarity >= 0.96 -> distance <= 0.04)
+            # Calculate distance threshold cutoff (e.g. similarity >= 0.92 -> distance <= 0.08; similarity >= 0.96 -> distance <= 0.04)
             distance_threshold = round(1.0 - similarity_threshold, 4)
             
             # Formulate query: KNN search returns nearest neighbor
