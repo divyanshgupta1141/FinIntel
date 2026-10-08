@@ -123,7 +123,7 @@ Inspect the critical implementation files directly:
 
 ### 1. Environment Configuration
 ```bash
-git clone [https://github.com/divyanshgupta1141/FinIntel.git](https://github.com/divyanshgupta1141/FinIntel.git)
+git clone [https://github.com/divyanshgupta1141/FinIntel.git]
 cd FinIntel
 cp .env.example .env
 ```
