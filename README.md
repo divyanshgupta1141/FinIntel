@@ -1,4 +1,4 @@
-# FinIntel: Financial Document Intelligence Platform 📈🏛️
+# FinIntel: Financial Document Intelligence Platform 
 
 > **Token-Optimized Financial RAG Platform pairing Hybrid RRF Retrieval (BM25 + pgvector) with Redis Stack (HNSW) Semantic Caching and Automated Ragas Evals.**
 
@@ -11,14 +11,14 @@
 
 ---
 
-## 📺 Live Deployment & Documentation
+##  Live Deployment & Documentation
 
 * **Interactive Swagger UI:** [finintel-m47z.onrender.com/docs](https://finintel-m47z.onrender.com/docs#/)
 * **Repository:** [github.com/divyanshgupta1141/FinIntel](https://github.com/divyanshgupta1141/FinIntel)
 
 ---
 
-## 🏗️ System Architecture Flow
+##   System Architecture Flow
 
 FinIntel models the ingestion and querying lifecycle to prioritize numerical precision and strict token efficiency. Every query passes through an in-memory vector cache before executing in-database hybrid retrieval:
 
@@ -50,7 +50,7 @@ flowchart TD
 
 ---
 
-## 🛡️ Core Engineering & Optimization Highlights
+##  Core Engineering & Optimization Highlights
 
 ### 1. Zero-Token Redis Stack Semantic Caching
 * **HNSW Vector Indexing:** Employs RediSearch over 768-dimensional embeddings using `DISTANCE_METRIC: "COSINE"`.
@@ -75,7 +75,7 @@ $$\text{RRF Score}(d) = \sum_{m \in \{\text{dense}, \text{lexical}\}} \frac{1}{6
 
 ---
 
-## 📊 Empirical Retrieval & Evaluation Benchmarks
+##  Empirical Retrieval & Evaluation Benchmarks
 
 FinIntel includes a standalone automated evaluation suite (`eval.py`) integrating **Ragas** and **HuggingFace Datasets** to evaluate retrieval fidelity against SEC Form 10-K and quarterly corporate filings:
 
@@ -100,7 +100,7 @@ python eval.py
 
 ---
 
-## 📂 Key Code & Architecture Pointers
+##  Key Code & Architecture Pointers
 
 Inspect the critical implementation files directly:
 
@@ -114,7 +114,7 @@ Inspect the critical implementation files directly:
 
 ---
 
-## 🚀 Local Quickstart Guide
+##  Local Quickstart Guide
 
 ### Prerequisites
 * Docker & Docker Compose
@@ -157,7 +157,7 @@ http://localhost:8000/docs
 
 ---
 
-## 🛠️ Tech Stack Summary
+##  Tech Stack Summary
 
 * **Backend:** FastAPI, AsyncIO, Uvicorn, Pydantic v2
 * **Storage & Indexing:** PostgreSQL 16, pgvector (HNSW), GIN Indexing (`tsvector`)
